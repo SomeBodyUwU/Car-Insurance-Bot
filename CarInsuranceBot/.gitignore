@@ -1,0 +1,22 @@
+# Ignore build results
+bin/
+obj/
+
+# User-specific files
+.vscode/
+*.user
+*.suo
+
+# Environment and secrets
+.env
+secrets.json
+
+# Launch settings
+Properties/launchSettings.json
+
+# DotNetEnv
+.env.*
+
+# Others
+*.log
+*.db
