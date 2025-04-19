@@ -18,17 +18,17 @@ namespace CarInsuranceBot.Models
             VehicleNumber = vehicleNumber;
         }
 
-        public string getName()
+        public string GetName()
         {
             return Name;
         }
 
-        public string getPassportNumber()
+        public string GetPassportNumber()
         {
             return PassportNumber;
         }
 
-        public string getVehicleNumber()
+        public string GetVehicleNumber()
         {
             return VehicleNumber;
         }

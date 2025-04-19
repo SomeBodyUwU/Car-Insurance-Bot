@@ -26,7 +26,7 @@ namespace CarInsuranceBot
         }
         public TelegramBotService()
         {
-            _botClient = new TelegramBotClient("");
+            _botClient = new TelegramBotClient(Environment.GetEnvironmentVariable("CARINSURANCEBOT_TELEGRAM_API_KEY"));
         }
         public async Task Start()
         {
@@ -54,8 +54,7 @@ namespace CarInsuranceBot
                     {
                         userState[chatId] = UserState.AwaitingVehicleDoc;
                         await _botClient.SendMessage(chatId,
-                            "✅ Passport photo received.\nNow send a photo of your *vehicle identification document* 🚗",
-                            parseMode: Telegram.Bot.Types.Enums.ParseMode.Markdown);
+                            "✅ Passport photo received.\nNow send a photo of your *vehicle identification document* 🚗");
                     }
                     else
                     {
@@ -73,9 +72,9 @@ namespace CarInsuranceBot
                         var extractedData = mindeeService.MindeeDataExtraction();
 
                         await _botClient.SendMessage(chatId, $"📝 Here’s what I found:\n" +
-                            $"👤 Name: {extractedData.getName()}\n" +
-                            $"🪪 Passport ID: {extractedData.getPassportNumber()}\n" +
-                            $"🚘 Vehicle ID: {extractedData.getVehicleNumber()}\n\n" +
+                            $"👤 Name: {extractedData.GetName()}\n" +
+                            $"🪪 Passport ID: {extractedData.GetPassportNumber()}\n" +
+                            $"🚘 Vehicle ID: {extractedData.GetVehicleNumber()}\n\n" +
                             "Is this information correct? ✅");
                     }
                     else
