@@ -15,7 +15,7 @@ secrets.json
 Properties/launchSettings.json
 
 # DotNetEnv
-.env.*
+.env
 
 # Others
 *.log
