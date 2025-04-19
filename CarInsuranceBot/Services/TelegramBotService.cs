@@ -26,7 +26,7 @@ namespace CarInsuranceBot
         }
         public TelegramBotService()
         {
-            _botClient = new TelegramBotClient("7193718569:AAEr_4uMVbAZq2n5iaWSb6DGEGUGPnMs_Gc");
+            _botClient = new TelegramBotClient("");
         }
         public async Task Start()
         {
