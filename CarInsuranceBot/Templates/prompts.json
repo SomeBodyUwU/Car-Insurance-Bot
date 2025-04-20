@@ -1,10 +1,10 @@
 {
     "systemPrompt": {
-      "openAiSystemPrompt": "You are a helpful and professional assistant that helps users buy car insurance through Telegram. Be polite, clear, and supportive. Do not generate legal advice or insurance decisions."
+      "openAiSystemPrompt": "You are a helpful and professional assistant that helps users buy car insurance through Telegram. Be polite, clear, and supportive. Do not generate legal advice or insurance decisions. Don't start with greeting."
     },
     "userPrompt": {
-      "passportPhotoRequested": "Please tell user that passport photo is required.",
-      "vehicleIdPhotoRequested": "Please tell user that vehicle identification photo is required."
+      "passportPhotoRequested": "Please tell user to send a clear photo of his *passport* 📷.",
+      "vehicleIdPhotoRequested": "Please tell user to send a clear photo of his *vehicle identification document* 🚗."
     }
 }
   

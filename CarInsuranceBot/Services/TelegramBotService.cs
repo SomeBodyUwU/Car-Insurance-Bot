@@ -20,6 +20,7 @@ namespace CarInsuranceBot
         private readonly CancellationTokenSource cst = new();
         private readonly ReceiverOptions receiverOptions = new() { AllowedUpdates = { } };
         private readonly Dictionary<long, UserState> userState = [];
+        private readonly Prompts _prompts;
         public enum UserState
         {
             None,
@@ -29,6 +30,9 @@ namespace CarInsuranceBot
         }
         public TelegramBotService()
         {
+            var path = Path.Combine(AppContext.BaseDirectory, "Templates", "prompts.json");
+            var json = File.ReadAllText(path);
+            _prompts = JsonSerializer.Deserialize<Prompts>(json) ?? throw new Exception("Failed to load prompts.");
             _botClient = new TelegramBotClient(Environment.GetEnvironmentVariable("CARINSURANCEBOT_TELEGRAM_API_KEY"));
         }
         public async Task Start()
@@ -43,9 +47,6 @@ namespace CarInsuranceBot
             if(update.Message == null) return;
             var message = update.Message;
             var chatId = message.Chat.Id;
-            var path = Path.Combine(AppContext.BaseDirectory, "Templates", "prompts.json");
-            var json = File.ReadAllText(path);
-            var prompts = JsonSerializer.Deserialize<Prompts>(json);
             if(!userState.ContainsKey(chatId)) userState[chatId] = UserState.None;
             if(message.Type == MessageType.Text && message.Text?.ToLower() == "/start" && userState[chatId] == UserState.None)
             {
@@ -63,10 +64,9 @@ namespace CarInsuranceBot
                     }
                     else
                     {
-                        await _botClient.SendMessage(chatId, "Please send me a clear photo of your *passport* 📷");
                         var response = await _openAiService.ChatGPTResponse(
-                            prompts.systemPrompt["openAiSystemPrompt"],
-                            prompts.userPrompt["passportPhotoRequested"]
+                            _prompts.systemPrompt["openAiSystemPrompt"],
+                            _prompts.userPrompt["passportPhotoRequested"]
                         );
 
                         await _botClient.SendMessage(chatId, response);
@@ -86,11 +86,16 @@ namespace CarInsuranceBot
                             $"👤 Name: {extractedData.GetName()}\n" +
                             $"🪪 Passport ID: {extractedData.GetPassportNumber()}\n" +
                             $"🚘 Vehicle ID: {extractedData.GetVehicleNumber()}\n\n" +
-                            "Is this information correct? ✅");
+                            "Is this information correct? (yes/no)✅");
                     }
                     else
                     {
-                        await _botClient.SendMessage(chatId, "Please send me a clear photo of your *vehicle identification document* 🚗");
+                        var response = await _openAiService.ChatGPTResponse(
+                            _prompts.systemPrompt["openAiSystemPrompt"],
+                            _prompts.userPrompt["vehicleIdPhotoRequested"]
+                        );
+
+                        await _botClient.SendMessage(chatId, response);
                     }
                     break;
             }
