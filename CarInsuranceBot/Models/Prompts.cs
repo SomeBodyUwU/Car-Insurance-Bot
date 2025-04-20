@@ -7,7 +7,7 @@ namespace CarInsuranceBot.Models
 {
     public class Prompts
     {
-        public readonly Dictionary<string, string> _systemPrompt;
-        public readonly Dictionary<string, string> _userPrompt;
+        public Dictionary<string, string> systemPrompt {get; set;}
+        public Dictionary<string, string> userPrompt {get; set;}
     }
 }

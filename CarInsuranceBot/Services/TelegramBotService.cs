@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
+using CarInsuranceBot.Models;
 using CarInsuranceBot.Services;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
@@ -14,6 +16,7 @@ namespace CarInsuranceBot
     public class TelegramBotService
     {
         private readonly TelegramBotClient _botClient;
+        private OpenAiService _openAiService = new();
         private readonly CancellationTokenSource cst = new();
         private readonly ReceiverOptions receiverOptions = new() { AllowedUpdates = { } };
         private readonly Dictionary<long, UserState> userState = [];
@@ -33,15 +36,17 @@ namespace CarInsuranceBot
             _botClient.StartReceiving(UpdateHandler, ErrorHandler, receiverOptions, cst.Token);
             var botItself = await _botClient.GetMe();
             Console.WriteLine($"Bot {botItself.Username} is running! Press any key to exit.");
-            Console.ReadKey();
+            await Task.Delay(-1);
         }
         private async Task UpdateHandler(ITelegramBotClient _botClient, Update update, CancellationToken cst)
         {
             if(update.Message == null) return;
             var message = update.Message;
             var chatId = message.Chat.Id;
-            if(!userState.ContainsKey(chatId))
-            userState[chatId] = UserState.None;
+            var path = Path.Combine(AppContext.BaseDirectory, "Templates", "prompts.json");
+            var json = File.ReadAllText(path);
+            var prompts = JsonSerializer.Deserialize<Prompts>(json);
+            if(!userState.ContainsKey(chatId)) userState[chatId] = UserState.None;
             if(message.Type == MessageType.Text && message.Text?.ToLower() == "/start" && userState[chatId] == UserState.None)
             {
                 userState[chatId] = UserState.AwaitingPassport;
@@ -59,6 +64,12 @@ namespace CarInsuranceBot
                     else
                     {
                         await _botClient.SendMessage(chatId, "Please send me a clear photo of your *passport* 📷");
+                        var response = await _openAiService.ChatGPTResponse(
+                            prompts.systemPrompt["openAiSystemPrompt"],
+                            prompts.userPrompt["passportPhotoRequested"]
+                        );
+
+                        await _botClient.SendMessage(chatId, response);
                     }
                     break;
 

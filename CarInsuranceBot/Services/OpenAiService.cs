@@ -14,7 +14,9 @@ namespace CarInsuranceBot.Services
         private readonly string _apiKey;
         public OpenAiService()
         {
-            _apiKey = Environment.GetEnvironmentVariable("CARINSURANCEBOT_OPENAI_API_KEY");
+            _apiKey = Environment.GetEnvironmentVariable("EchoLing");
+            if (string.IsNullOrEmpty(_apiKey))
+                throw new Exception("OpenAI API key is missing from environment variables.");
             _httpClient = new HttpClient
             {
                 BaseAddress = new Uri("https://api.openai.com/v1/")
@@ -39,8 +41,19 @@ namespace CarInsuranceBot.Services
             var response = await _httpClient.PostAsync("chat/completions", content);
             var responseString = await response.Content.ReadAsStringAsync();
 
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new Exception($"OpenAI request failed: {response.StatusCode}\n{responseString}");
+            }
+
             using var doc = JsonDocument.Parse(responseString);
-            var reply = doc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
+
+            var choices = doc.RootElement.GetProperty("choices");
+            if (choices.GetArrayLength() == 0)
+                throw new Exception("No response from OpenAI.");
+
+            var reply = choices[0].GetProperty("message").GetProperty("content").GetString();
+            Console.WriteLine($"OpenAI raw response:{responseString}");
 
             return reply;
         }
