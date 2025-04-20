@@ -4,7 +4,10 @@
     },
     "userPrompt": {
       "passportPhotoRequested": "Please tell user to send a clear photo of his *passport* 📷.",
-      "vehicleIdPhotoRequested": "Please tell user to send a clear photo of his *vehicle identification document* 🚗."
+      "vehicleIdPhotoRequested": "Please tell user to send a clear photo of his *vehicle identification document* 🚗.",
+      "dataConfirmation":"Please tell user to type ot to use reply-keyboard to say 'yes' or 'no' whether user is agree or disagree with shown data.",
+      "dataConfirmationDeny":"User disagreed with the extracted data. Tell tell user to send again a clear photo of his *passport* 📷.",
+      "dataConfirmationAgree":"User agreed with the extracted data. Tell user that proceeding to the next step."
     }
 }
   
