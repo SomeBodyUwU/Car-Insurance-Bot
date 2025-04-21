@@ -16,7 +16,7 @@ namespace CarInsuranceBot.Services
         {
             // Retrieve API key from environment variables.
             // If the variable is not set, throw a clear exception.
-            _apiKey = Environment.GetEnvironmentVariable("EchoLing") 
+            _apiKey = Environment.GetEnvironmentVariable("CARINSURANCEBOT_OPENAI_API_KEY") 
                 ?? throw new InvalidOperationException("OpenAI API key is missing from environment variables.");
 
             if (string.IsNullOrEmpty(_apiKey))
