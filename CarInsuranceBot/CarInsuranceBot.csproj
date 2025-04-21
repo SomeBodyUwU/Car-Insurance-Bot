@@ -12,9 +12,6 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.4" />
     <PackageReference Include="OpenAI" Version="2.1.0" />
     <PackageReference Include="Telegram.Bot" Version="22.5.0" />
-    <Content Include="Templates\prompts.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
     <Content Include="Templates\insurance_template_openAi_prompt.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
