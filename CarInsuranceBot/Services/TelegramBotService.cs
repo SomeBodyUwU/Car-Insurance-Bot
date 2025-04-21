@@ -22,13 +22,16 @@ namespace CarInsuranceBot
         private readonly ReceiverOptions receiverOptions = new() { AllowedUpdates = { } };
         private readonly Dictionary<long, UserState> userState = [];
         private readonly Prompts _prompts;
+        private readonly Dictionary<long, UserExtractedData> _extractedDataByUser = [];
+
         public enum UserState
         {
             None,
             AwaitingPassport,
             AwaitingVehicleDoc,
             Processing,
-            AwaitingMoneyConfirmation
+            AwaitingMoneyConfirmation,
+            Finished
         }
         public TelegramBotService()
         {
@@ -70,6 +73,18 @@ namespace CarInsuranceBot
                         "Is this information correct? (please use in-build keyboard)✅";
             return message;
         }
+        private string FillInsurancePromptTemplate(UserExtractedData extractedData)
+        {
+            var templatePath = Path.Combine(AppContext.BaseDirectory, "Templates", "insurance_template_openAi_prompt.txt");
+            var templateText = File.ReadAllText(templatePath);
+            var filled = templateText
+            .Replace("{name}", extractedData.GetName())
+            .Replace("{passportId}", extractedData.GetPassportNumber())
+            .Replace("{vehicleId}", extractedData.GetVehicleNumber());
+
+            return filled;
+        }
+
         private async Task UpdateHandler(ITelegramBotClient _botClient, Update update, CancellationToken cst)
         {
             if(update.Message == null) return;
@@ -79,7 +94,7 @@ namespace CarInsuranceBot
             if(message.Type == MessageType.Text && message.Text?.ToLower() == "/start" && userState[chatId] == UserState.None)
             {
                 userState[chatId] = UserState.AwaitingPassport;
-                await _botClient.SendMessage(chatId, "👋 Hello! I'm your Car Insurance Assistant Bot.");
+                await _botClient.SendMessage(chatId, "👋 Hello! I'm your Car Insurance Assistant Bot.", replyMarkup: new ReplyKeyboardRemove());
             }
             switch (userState[chatId])
             {
@@ -109,6 +124,7 @@ namespace CarInsuranceBot
 
                         var mindeeService = new MindeeService();
                         var extractedData = mindeeService.MindeeDataExtraction();
+                        _extractedDataByUser[chatId] = extractedData;
                         var replyKeyboard = CreateReplyKeyboard();
 
                         await _botClient.SendMessage(chatId, SendExtractedData(extractedData), replyMarkup: replyKeyboard);
@@ -137,7 +153,7 @@ namespace CarInsuranceBot
                                 _prompts.userPrompt["dataConfirmationAgree"]
                                 );
 
-                                await _botClient.SendMessage(chatId, agreeResponse, replyMarkup: new ReplyKeyboardRemove());
+                                await _botClient.SendMessage(chatId, agreeResponse);
                                 break;
                             case "no":
                                 userState[chatId] = UserState.AwaitingPassport;
@@ -146,7 +162,7 @@ namespace CarInsuranceBot
                                 _prompts.userPrompt["dataConfirmationDeny"]
                                 );
 
-                                await _botClient.SendMessage(chatId, denyResponse);
+                                await _botClient.SendMessage(chatId, denyResponse, replyMarkup: new ReplyKeyboardRemove());
                                 break;
                             default:
                                 var defaultResponse = await _openAiService.ChatGPTResponse(
@@ -158,7 +174,72 @@ namespace CarInsuranceBot
                                 break;
                         }
                     }
+                    else
+                    {
+                        var defaultResponse = await _openAiService.ChatGPTResponse(
+                        _prompts.systemPrompt["openAiSystemPrompt"],
+                        _prompts.userPrompt["dataConfirmation"]
+                        );
+
+                        await _botClient.SendMessage(chatId, defaultResponse);
+                        break;
+                    }
                     break;
+                case UserState.AwaitingMoneyConfirmation:
+                    if (message.Type == MessageType.Text)
+                    {
+                        var text = message.Text?.Trim().ToLower();
+                        switch (text)
+                        {
+                            case "yes":
+                                userState[chatId] = UserState.Finished;
+                                if(_extractedDataByUser.TryGetValue(chatId, out var extractedData))
+                                {
+                                    var prompt = FillInsurancePromptTemplate(extractedData);
+                                    var agreeResponse = await _openAiService.ChatGPTResponse(
+                                        _prompts.systemPrompt["openAiSystemPrompt"],
+                                        prompt
+                                    );
+
+                                    await _botClient.SendMessage(chatId, agreeResponse, replyMarkup: new ReplyKeyboardRemove());
+                                }
+                                else
+                                {
+                                    await _botClient.SendMessage(chatId, "❌ Sorry, your session has expired. Please restart.", replyMarkup: new ReplyKeyboardRemove());
+                                    userState[chatId] = UserState.AwaitingPassport;
+                                }
+                                break;
+                            case "no":
+                                userState[chatId] = UserState.AwaitingPassport;
+                                var denyResponse = await _openAiService.ChatGPTResponse(
+                                _prompts.systemPrompt["openAiSystemPrompt"],
+                                _prompts.userPrompt["priceConfirmationDeny"]
+                                );
+
+                                await _botClient.SendMessage(chatId, denyResponse);
+                                break;
+                            default:
+                                var defaultResponse = await _openAiService.ChatGPTResponse(
+                                _prompts.systemPrompt["openAiSystemPrompt"],
+                                _prompts.userPrompt["priceConfirmation"]
+                                );
+
+                                await _botClient.SendMessage(chatId, defaultResponse);
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        var defaultResponse = await _openAiService.ChatGPTResponse(
+                        _prompts.systemPrompt["openAiSystemPrompt"],
+                        _prompts.userPrompt["priceConfirmation"]
+                        );
+
+                        await _botClient.SendMessage(chatId, defaultResponse);
+                        break;
+                    }
+                    break;
+
             }
         }
         private async Task ErrorHandler(ITelegramBotClient _botclient, Exception exception, CancellationToken cst)

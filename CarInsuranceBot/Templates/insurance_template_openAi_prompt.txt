@@ -1,0 +1,13 @@
+User agreed with the fixed 100 USD insurance price. Generate a formal dummy car insurance policy using the following data:
+
+Name: {name}
+Passport ID: {passportId}
+Vehicle ID: {vehicleId}
+
+Coverage:
+- Third-party liability
+- Personal accident coverage
+- Theft protection
+
+Terms:
+This is a dummy policy generated for demonstration purposes only.

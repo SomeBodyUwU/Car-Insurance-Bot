@@ -7,30 +7,30 @@ namespace CarInsuranceBot.Models
 {
     public class UserExtractedData
     {
-        private readonly string Name;
-        private readonly string PassportNumber;
-        private readonly string VehicleNumber;
+        private readonly string _Name;
+        private readonly string _PassportNumber;
+        private readonly string _VehicleNumber;
 
         public UserExtractedData(string name, string passportNumber, string vehicleNumber)
         {
-            Name = name;
-            PassportNumber = passportNumber;
-            VehicleNumber = vehicleNumber;
+            _Name = name;
+            _PassportNumber = passportNumber;
+            _VehicleNumber = vehicleNumber;
         }
 
         public string GetName()
         {
-            return Name;
+            return _Name;
         }
 
         public string GetPassportNumber()
         {
-            return PassportNumber;
+            return _PassportNumber;
         }
 
         public string GetVehicleNumber()
         {
-            return VehicleNumber;
+            return _VehicleNumber;
         }
     }
 }
