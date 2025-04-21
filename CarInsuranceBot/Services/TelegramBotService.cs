@@ -21,7 +21,6 @@ namespace CarInsuranceBot
         private readonly CancellationTokenSource cst = new();
         private readonly ReceiverOptions receiverOptions = new() { AllowedUpdates = { } };
         private readonly Dictionary<long, UserState> userState = [];
-        private readonly Prompts _prompts;
         private readonly Dictionary<long, UserExtractedData> _extractedDataByUser = [];
 
         public enum UserState
@@ -37,8 +36,9 @@ namespace CarInsuranceBot
         {
             var path = Path.Combine(AppContext.BaseDirectory, "Templates", "prompts.json");
             var json = File.ReadAllText(path);
-            _prompts = JsonSerializer.Deserialize<Prompts>(json) ?? throw new Exception("Failed to load prompts.");
-            _botClient = new TelegramBotClient(Environment.GetEnvironmentVariable("CARINSURANCEBOT_TELEGRAM_API_KEY"));
+            var telegramApiKey = Environment.GetEnvironmentVariable("CARINSURANCEBOT_TELEGRAM_API_KEY")
+                ?? throw new InvalidOperationException("Telegram API key is missing from environment variables.");
+            _botClient = new TelegramBotClient(telegramApiKey);
         }
         public async Task Start()
         {
@@ -91,7 +91,7 @@ namespace CarInsuranceBot
             var message = update.Message;
             var chatId = message.Chat.Id;
             if(!userState.ContainsKey(chatId)) userState[chatId] = UserState.None;
-            if(message.Type == MessageType.Text && message.Text?.ToLower() == "/start" && userState[chatId] == UserState.None)
+            if(message.Type == MessageType.Text && message.Text?.ToLower() == "/start")
             {
                 userState[chatId] = UserState.AwaitingPassport;
                 await _botClient.SendMessage(chatId, "👋 Hello! I'm your Car Insurance Assistant Bot.", replyMarkup: new ReplyKeyboardRemove());
@@ -108,8 +108,8 @@ namespace CarInsuranceBot
                     else
                     {
                         var response = await _openAiService.ChatGPTResponse(
-                            _prompts.systemPrompt["openAiSystemPrompt"],
-                            _prompts.userPrompt["passportPhotoRequested"]
+                            Prompts.SystemPrompt.openAiSystemPrompt,
+                            Prompts.UserPrompt.passportPhotoRequested
                         );
 
                         await _botClient.SendMessage(chatId, response);
@@ -132,8 +132,8 @@ namespace CarInsuranceBot
                     else
                     {
                         var response = await _openAiService.ChatGPTResponse(
-                            _prompts.systemPrompt["openAiSystemPrompt"],
-                            _prompts.userPrompt["vehicleIdPhotoRequested"]
+                            Prompts.SystemPrompt.openAiSystemPrompt,
+                            Prompts.UserPrompt.vehicleIdPhotoRequested
                         );
 
                         await _botClient.SendMessage(chatId, response);
@@ -149,8 +149,8 @@ namespace CarInsuranceBot
                             case "yes":
                                 userState[chatId] = UserState.AwaitingMoneyConfirmation;
                                 var agreeResponse = await _openAiService.ChatGPTResponse(
-                                _prompts.systemPrompt["openAiSystemPrompt"],
-                                _prompts.userPrompt["dataConfirmationAgree"]
+                                Prompts.SystemPrompt.openAiSystemPrompt,
+                                Prompts.UserPrompt.dataConfirmationAgree
                                 );
 
                                 await _botClient.SendMessage(chatId, agreeResponse);
@@ -158,16 +158,16 @@ namespace CarInsuranceBot
                             case "no":
                                 userState[chatId] = UserState.AwaitingPassport;
                                 var denyResponse = await _openAiService.ChatGPTResponse(
-                                _prompts.systemPrompt["openAiSystemPrompt"],
-                                _prompts.userPrompt["dataConfirmationDeny"]
+                                Prompts.SystemPrompt.openAiSystemPrompt,
+                                Prompts.UserPrompt.dataConfirmationDeny
                                 );
 
                                 await _botClient.SendMessage(chatId, denyResponse, replyMarkup: new ReplyKeyboardRemove());
                                 break;
                             default:
                                 var defaultResponse = await _openAiService.ChatGPTResponse(
-                                _prompts.systemPrompt["openAiSystemPrompt"],
-                                _prompts.userPrompt["dataConfirmation"]
+                                Prompts.SystemPrompt.openAiSystemPrompt,
+                                Prompts.UserPrompt.dataConfirmation
                                 );
 
                                 await _botClient.SendMessage(chatId, defaultResponse);
@@ -177,8 +177,8 @@ namespace CarInsuranceBot
                     else
                     {
                         var defaultResponse = await _openAiService.ChatGPTResponse(
-                        _prompts.systemPrompt["openAiSystemPrompt"],
-                        _prompts.userPrompt["dataConfirmation"]
+                        Prompts.SystemPrompt.openAiSystemPrompt,
+                        Prompts.UserPrompt.dataConfirmation
                         );
 
                         await _botClient.SendMessage(chatId, defaultResponse);
@@ -197,7 +197,7 @@ namespace CarInsuranceBot
                                 {
                                     var prompt = FillInsurancePromptTemplate(extractedData);
                                     var agreeResponse = await _openAiService.ChatGPTResponse(
-                                        _prompts.systemPrompt["openAiSystemPrompt"],
+                                        Prompts.SystemPrompt.openAiSystemPrompt,
                                         prompt
                                     );
 
@@ -210,18 +210,17 @@ namespace CarInsuranceBot
                                 }
                                 break;
                             case "no":
-                                userState[chatId] = UserState.AwaitingPassport;
                                 var denyResponse = await _openAiService.ChatGPTResponse(
-                                _prompts.systemPrompt["openAiSystemPrompt"],
-                                _prompts.userPrompt["priceConfirmationDeny"]
+                                Prompts.SystemPrompt.openAiSystemPrompt,
+                                Prompts.UserPrompt.priceConfirmationDeny
                                 );
 
                                 await _botClient.SendMessage(chatId, denyResponse);
                                 break;
                             default:
                                 var defaultResponse = await _openAiService.ChatGPTResponse(
-                                _prompts.systemPrompt["openAiSystemPrompt"],
-                                _prompts.userPrompt["priceConfirmation"]
+                                Prompts.SystemPrompt.openAiSystemPrompt,
+                                Prompts.UserPrompt.priceConfirmation
                                 );
 
                                 await _botClient.SendMessage(chatId, defaultResponse);
@@ -231,13 +230,16 @@ namespace CarInsuranceBot
                     else
                     {
                         var defaultResponse = await _openAiService.ChatGPTResponse(
-                        _prompts.systemPrompt["openAiSystemPrompt"],
-                        _prompts.userPrompt["priceConfirmation"]
+                        Prompts.SystemPrompt.openAiSystemPrompt,
+                        Prompts.UserPrompt.priceConfirmation
                         );
 
                         await _botClient.SendMessage(chatId, defaultResponse);
                         break;
                     }
+                    break;
+                case UserState.Finished:
+                    await _botClient.SendMessage(chatId, "Thank you for using our service. If you want to have one more insurance please type /start");
                     break;
 
             }

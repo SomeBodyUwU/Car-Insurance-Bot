@@ -6,6 +6,7 @@ using CarInsuranceBot.Models;
 
 namespace CarInsuranceBot.Services
 {
+    // Mock call for Mindee API
     public class MindeeService
     {
         public UserExtractedData MindeeDataExtraction()
