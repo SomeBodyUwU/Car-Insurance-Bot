@@ -34,8 +34,6 @@ namespace CarInsuranceBot
         }
         public TelegramBotService()
         {
-            var path = Path.Combine(AppContext.BaseDirectory, "Templates", "prompts.json");
-            var json = File.ReadAllText(path);
             var telegramApiKey = Environment.GetEnvironmentVariable("CARINSURANCEBOT_TELEGRAM_API_KEY")
                 ?? throw new InvalidOperationException("Telegram API key is missing from environment variables.");
             _botClient = new TelegramBotClient(telegramApiKey);
